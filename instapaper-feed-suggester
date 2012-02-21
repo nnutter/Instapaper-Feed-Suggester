@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use Modern::Perl;
+use Getopt::Std;
 require IO::File;
 require Text::CSV;
 require WWW::Mechanize;
@@ -8,9 +9,28 @@ require URI::_foreign;
 
 my $main = __PACKAGE__;
 
-my $csv_path = shift @ARGV;
+our $opt_o;
+getopt('o');
 
-$main->load_instapaper_csv($csv_path);
+my $csv_path = shift @ARGV;
+unless ($csv_path) {
+    $class->HELP_MESSAGE();
+    exit;
+}
+
+my @suggested_feeds = $main->load_instapaper_csv($csv_path);
+
+if ($opt_o) {
+    $class->export_opml($opt_o, @suggested_feeds);
+}
+
+sub HELP_MESSAGE {
+    say("Usage: $0 [-o <opml_output>] instapaper-export.csv");
+}
+
+sub VERSION_MESSAGE {
+    say("alpha");
+}
 
 sub load_instapaper_csv {
     my $class = shift;
@@ -19,7 +39,7 @@ sub load_instapaper_csv {
     my $mech = WWW::Mechanize->new();
     my $csv = Text::CSV->new({binary => 1});
 
-    my %feed_count;
+    my $preferred_feeds = {};
     my $file = IO::File->new($file_path, 'r');
     URL: while (my $row = $csv->getline($file)) {
         my ($url, $title, $selection, $folder) = @$row;
@@ -36,13 +56,17 @@ sub load_instapaper_csv {
             say(STDERR "Exception during find_preferred_feed ($url): $error");
         }
         if ($preferred_feed) {
-            $feed_count{$class->abs_url($preferred_feed)}++;
+            $preferred_feeds->{$class->abs_url($preferred_feed)}{count}++;
+            $preferred_feeds->{$class->abs_url($preferred_feed)}{feed} = $preferred_feed;
         }
     }
 
-    for my $feed_url (keys %feed_count) {
-        say($feed_count{$feed_url} . ' ' . $feed_url);
+    my @suggested_feeds;
+    for my $feed_url (keys %$preferred_feeds) {
+        say($preferred_feeds->{$feed_url}{count} . ' ' . $feed_url);
+        push @suggested_feeds, $preferred_feeds->{$feed_url}{feed};
     }
+    return @suggested_feeds;
 }
 
 sub url_host {
@@ -105,4 +129,30 @@ sub feeds {
     @feeds = grep { ! $seen{$class->abs_url($_)} ++ } @feeds;
 
     return @feeds;
+}
+
+sub export_opml {
+    my $class = shift;
+    my $opml_path = shift;
+    my @feeds = @_;
+
+    require XML::OPML;
+    my $opml = XML::OPML->new();
+
+    $opml->head(
+        title => 'Instapaper Feed Suggester',
+    );
+
+    for my $feed (@feeds) {
+        $opml->insert_outline(
+            group => 'Instapaper Feed Suggester',
+            type => 'rss',
+            xmlUrl => $class->abs_url($feed),
+            title => '',
+            text => '',
+            htmlUrl => '',
+        );
+    }
+
+    $opml->save($opml_path);
 }
