@@ -14,14 +14,14 @@ getopt('o');
 
 my $csv_path = shift @ARGV;
 unless ($csv_path) {
-    $class->HELP_MESSAGE();
+    $main->HELP_MESSAGE();
     exit;
 }
 
 my @suggested_feeds = $main->load_instapaper_csv($csv_path);
 
 if ($opt_o) {
-    $class->export_opml($opt_o, @suggested_feeds);
+    $main->export_opml($opt_o, @suggested_feeds);
 }
 
 sub HELP_MESSAGE {
