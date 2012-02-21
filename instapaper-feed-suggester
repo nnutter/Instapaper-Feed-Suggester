@@ -8,7 +8,9 @@ require URI::_foreign;
 
 my $main = __PACKAGE__;
 
-$main->load_instapaper_csv('instapaper-export.csv');
+my $csv_path = shift @ARGV;
+
+$main->load_instapaper_csv($csv_path);
 
 sub load_instapaper_csv {
     my $class = shift;
