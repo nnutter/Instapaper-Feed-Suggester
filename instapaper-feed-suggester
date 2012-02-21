@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use Modern::Perl;
-use Getopt::Std;
+use Getopt::Long;
 require IO::File;
 require Text::CSV;
 require WWW::Mechanize;
@@ -9,27 +9,39 @@ require URI::_foreign;
 
 my $main = __PACKAGE__;
 
-our $opt_o;
-getopt('o');
+my ($opml_output_path, $help) = ('')x2;
+my $gotoptions = GetOptions(
+    "output=s" => \$opml_output_path,
+    "help" => \$help,
+);
+unless ($gotoptions) {
+    exit 255;
+}
 
-my $csv_path = shift @ARGV;
-unless ($csv_path) {
+if ($help) {
     $main->HELP_MESSAGE();
     exit;
 }
 
+my $csv_path = shift @ARGV;
+unless ($csv_path) {
+    say("ERROR: Missing path to CSV file.");
+    exit 255;
+}
+
+if (@ARGV) {
+    say("ERROR: Unexpected arguments: ", join(' ', @ARGV));
+    exit 255;
+}
+
 my @suggested_feeds = $main->load_instapaper_csv($csv_path);
 
-if ($opt_o) {
-    $main->export_opml($opt_o, @suggested_feeds);
+if ($opml_output_path) {
+    $main->export_opml($opml_output_path, @suggested_feeds);
 }
 
 sub HELP_MESSAGE {
     say("Usage: $0 [-o <opml_output>] instapaper-export.csv");
-}
-
-sub VERSION_MESSAGE {
-    say("alpha");
 }
 
 sub load_instapaper_csv {
