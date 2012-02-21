@@ -2,6 +2,7 @@
 
 use Modern::Perl;
 use Getopt::Long;
+use Pod::Usage;
 require IO::File;
 require Text::CSV;
 require WWW::Mechanize;
@@ -9,19 +10,14 @@ require URI::_foreign;
 
 my $main = __PACKAGE__;
 
-my ($opml_output_path, $help) = ('')x2;
-my $gotoptions = GetOptions(
+my ($opml_output_path, $help, $man) = ('')x3;
+GetOptions(
     "output=s" => \$opml_output_path,
-    "help" => \$help,
-);
-unless ($gotoptions) {
-    exit 255;
-}
-
-if ($help) {
-    $main->HELP_MESSAGE();
-    exit;
-}
+    "help|?" => \$help,
+    man => \$man,
+) || pod2usage(2);
+pod2usage(1) if $help;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 my $csv_path = shift @ARGV;
 unless ($csv_path) {
@@ -170,3 +166,38 @@ sub export_opml {
 
     $opml->save($opml_path);
 }
+
+__END__
+
+=head1 NAME
+
+instapaper-feed-suggester
+
+=head1 SYNOPSIS
+
+instapaper-feed-suggester [options] [file ...]
+
+=head1 OPTIONS
+
+=over 8
+
+=item -o
+
+Create OPML output using argument as path.
+
+=item --help
+
+Print a brief help message and exits.
+
+=item --man
+
+Prints the manual page and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+Parses liked articles from an Instapaper CSV export and tries to determine
+the feed for that article.
+
+=cut
