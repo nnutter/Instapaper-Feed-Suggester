@@ -1,0 +1,103 @@
+#!/usr/bin/env perl
+
+use Modern::Perl;
+require IO::File;
+require Text::CSV;
+require WWW::Mechanize;
+require URI::_foreign;
+
+my $main = __PACKAGE__;
+
+$main->load_instapaper_csv('instapaper-export.csv');
+
+sub load_instapaper_csv {
+    my $class = shift;
+    my $file_path = shift;
+
+    my $mech = WWW::Mechanize->new();
+    my $csv = Text::CSV->new({binary => 1});
+
+    my %feed_count;
+    my $file = IO::File->new($file_path, 'r');
+    URL: while (my $row = $csv->getline($file)) {
+        my ($url, $title, $selection, $folder) = @$row;
+
+        next unless $folder eq 'Starred';
+
+        eval { $mech->get($url) };
+        if (my $error = $@) {
+            say(STDERR "Failed to get URL ($url): $error");
+        }
+
+        my $preferred_feed = $class->find_preferred_feed($mech);
+        if ($preferred_feed) {
+            $feed_count{$class->abs_url($preferred_feed)}++;
+        }
+    }
+
+    for my $feed_url (keys %feed_count) {
+        say($feed_count{$feed_url} . ' ' . $feed_url);
+    }
+}
+
+sub url_host {
+    my $class = shift;
+    my $mech = shift;
+    my $url_host = $mech->uri->host;
+    $url_host =~ s/^www\.//;
+    return $url_host;
+}
+
+sub find_preferred_feed {
+    my $class = shift;
+    my $mech = shift;
+
+    my $url = $mech->uri;
+    my $url_host = $class->url_host($mech);
+    my @feeds = $class->feeds($mech);
+
+    unless (@feeds) {
+        say(STDERR "Unable to find preferred feed for ($url): no feeds found.");
+        return;
+    }
+
+    if (@feeds == 1) {
+        return shift @feeds;
+    }
+
+    my @feedburner_feeds = grep { $_->URI->abs->host =~ /feeds\d*\.feedburner\.com/ } @feeds;
+    if (@feedburner_feeds == 1) {
+        return shift @feedburner_feeds;
+    } elsif (@feedburner_feeds) {
+        say(STDERR "Unable to find preferred feed for ($url): multiple FeedBurner feeds found:\n\t" . join("\n\t", map { $class->abs_url($_) } @feedburner_feeds));
+        return;
+    }
+
+    my @url_host_feeds = grep { $_->URI->abs->host =~ /$url_host/ } @feeds;
+    if (@url_host_feeds) {
+        @url_host_feeds = sort { length($class->abs_url($a)) <=> length($class->abs_url($b)) } @url_host_feeds;
+        return shift @url_host_feeds;
+    }
+
+    say(STDERR "Unable to find preferred feed for ($url): no FeedBurner or $url_host feeds found:\n\t" . join("\n\t", map { $class->abs_url($_) } @feeds));
+    return;
+}
+
+sub abs_url {
+    my $class = shift;
+    my $link = shift;
+    return $link->URI->abs->as_string;
+}
+
+sub feeds {
+    my $class = shift;
+    my $mech = shift;
+
+    my @links = $mech->links();
+    my @feeds = grep { exists $_->attrs->{type} && $_->attrs->{type} =~ /application\/(rss|atom)\+xml/ } @links;
+
+    my %seen = ();
+    @feeds = grep { ! $seen{$class->abs_url($_)} ++ } @feeds;
+
+    return @feeds;
+}
