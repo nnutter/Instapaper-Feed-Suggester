@@ -148,9 +148,9 @@ sub export_opml {
             group => 'Instapaper Feed Suggester',
             type => 'rss',
             xmlUrl => $class->abs_url($feed),
-            title => '',
-            text => '',
-            htmlUrl => '',
+#            title => '',
+#            text => '',
+#            htmlUrl => '',
         );
     }
 
