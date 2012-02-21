@@ -28,10 +28,13 @@ sub load_instapaper_csv {
 
         eval { $mech->get($url) };
         if (my $error = $@) {
-            say(STDERR "Failed to get URL ($url): $error");
+            say(STDERR "Exception during get ($url): $error");
         }
 
-        my $preferred_feed = $class->find_preferred_feed($mech);
+        my $preferred_feed = eval { $class->find_preferred_feed($mech) };
+        if (my $error = $@) {
+            say(STDERR "Exception during find_preferred_feed ($url): $error");
+        }
         if ($preferred_feed) {
             $feed_count{$class->abs_url($preferred_feed)}++;
         }
