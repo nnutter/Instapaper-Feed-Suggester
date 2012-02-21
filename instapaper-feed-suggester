@@ -41,7 +41,7 @@ sub load_instapaper_csv {
 
     my $preferred_feeds = {};
     my $file = IO::File->new($file_path, 'r');
-    URL: while (my $row = $csv->getline($file)) {
+    while (my $row = $csv->getline($file)) {
         my ($url, $title, $selection, $folder) = @$row;
 
         next unless $folder eq 'Starred';
@@ -49,11 +49,13 @@ sub load_instapaper_csv {
         eval { $mech->get($url) };
         if (my $error = $@) {
             say(STDERR "Exception during get ($url): $error");
+            next;
         }
 
         my $preferred_feed = eval { $class->find_preferred_feed($mech) };
         if (my $error = $@) {
             say(STDERR "Exception during find_preferred_feed ($url): $error");
+            next;
         }
         if ($preferred_feed) {
             $preferred_feeds->{$class->abs_url($preferred_feed)}{count}++;
