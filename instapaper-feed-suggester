@@ -35,7 +35,7 @@ if (@ARGV) {
 my @suggested_feeds = $main->load_instapaper_csv($csv_path);
 
 if ($opml_output_path) {
-    $main->export_opml($opml_output_path, @suggested_feeds);
+    $main->export_opml(@suggested_feeds);
 }
 
 sub HELP_MESSAGE {
@@ -147,7 +147,6 @@ sub feeds {
 
 sub export_opml {
     my $class = shift;
-    my $opml_path = shift;
     my @feeds = @_;
 
     require XML::OPML::SimpleGen;
@@ -165,7 +164,7 @@ sub export_opml {
         );
     }
 
-    $opml->save($opml_path);
+    $opml->save($opml_output_path);
 }
 
 __END__
