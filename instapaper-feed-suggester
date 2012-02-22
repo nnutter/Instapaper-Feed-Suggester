@@ -190,9 +190,17 @@ instapaper-feed-suggester [options] [file ...]
 
 =over 8
 
-=item -o
+=item --min-likes
+
+Minimum number of liked articles per feed to be included in suggested feeds.
+
+=item --output
 
 Create OPML output using argument as path.
+
+=item --debug
+
+Show debugging output to see which articles were unable to auto-discover a feed (and why) 
 
 =item --help
 
