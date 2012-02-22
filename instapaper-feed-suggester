@@ -137,7 +137,12 @@ sub feeds {
     my $mech = shift;
 
     my @links = $mech->links();
-    my @feeds = grep { exists $_->attrs->{type} && $_->attrs->{type} =~ /application\/(rss|atom)\+xml/ } @links;
+    my @feeds = grep {
+        exists $_->attrs->{type}
+        && exists $_->attrs->{rel}
+        && $_->attrs->{type} eq 'application/rss+xml'
+        && $_->attrs->{rel}  eq 'alternate'
+    } @links;
 
     my %seen = ();
     @feeds = grep { ! $seen{$class->abs_url($_)} ++ } @feeds;
