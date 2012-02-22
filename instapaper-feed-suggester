@@ -45,7 +45,7 @@ sub load_instapaper_csv {
     my $mech = WWW::Mechanize->new();
     my $csv = Text::CSV->new({binary => 1});
 
-    my $preferred_feeds = {};
+    my $discovered_feeds = {};
     my $file = IO::File->new($file_path, 'r');
     while (my $row = $csv->getline($file)) {
         my ($url, $title, $selection, $folder) = @$row;
@@ -58,22 +58,22 @@ sub load_instapaper_csv {
             next;
         }
 
-        my $preferred_feed = eval { $class->auto_discover_feed($mech) };
+        my $discovered_feed = eval { $class->auto_discover_feed($mech) };
         if (my $error = $@) {
             say(STDERR "Exception during auto_discover_feed ($url): $error") if $debug;
             next;
         }
-        if ($preferred_feed) {
-            $preferred_feeds->{$class->abs_url($preferred_feed)}{count}++;
-            $preferred_feeds->{$class->abs_url($preferred_feed)}{feed} = $preferred_feed;
+        if ($discovered_feed) {
+            $discovered_feeds->{$class->abs_url($discovered_feed)}{count}++;
+            $discovered_feeds->{$class->abs_url($discovered_feed)}{feed} = $discovered_feed;
         }
     }
 
     my @discovered_feeds;
-    for my $feed_url (keys %$preferred_feeds) {
-        say($preferred_feeds->{$feed_url}{count} . ' ' . $feed_url) if $debug;
-        if (!$min_likes || $preferred_feeds->{$feed_url}{count} >= $min_likes) {
-            push @discovered_feeds, $preferred_feeds->{$feed_url}{feed};
+    for my $feed_url (keys %$discovered_feeds) {
+        say($discovered_feeds->{$feed_url}{count} . ' ' . $feed_url) if $debug;
+        if (!$min_likes || $discovered_feeds->{$feed_url}{count} >= $min_likes) {
+            push @discovered_feeds, $discovered_feeds->{$feed_url}{feed};
         }
     }
     return @discovered_feeds;
