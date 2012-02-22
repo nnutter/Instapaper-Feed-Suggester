@@ -146,23 +146,16 @@ sub export_opml {
     my $opml_path = shift;
     my @feeds = @_;
 
-    require XML::OPML;
-    my $opml = XML::OPML->new(version => "1.1");
+    require XML::OPML::SimpleGen;
+    my $opml = XML::OPML::SimpleGen->new();
 
     $opml->head(
-        title => 'Instapaper Feed Suggester',
-    );
-
-    my $group = 'Instapaper Feed Suggester';
-    $opml->add_outline(
-        text      => $group,
-        title     => $group,
-        opmlvalue => 'embed',
+        title => 'Instapaper Feeds',
     );
 
     for my $feed (@feeds) {
         $opml->insert_outline(
-            group  => $group,
+            group  => 'Instapaper Feeds',
             type   => 'rss',
             xmlUrl => $class->abs_url($feed),
         );
