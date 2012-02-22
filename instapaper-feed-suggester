@@ -160,6 +160,10 @@ sub export_opml {
     $opml->head(
         title => 'Instapaper Feeds',
     );
+    $opml->outline({
+        type => 'rss',
+        xmlUrl => '',
+    });
 
     for my $feed (@feeds) {
         $opml->insert_outline(
