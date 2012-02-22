@@ -32,10 +32,10 @@ if (@ARGV) {
     exit 255;
 }
 
-my @suggested_feeds = $main->load_instapaper_csv($csv_path);
+my @discovered_feeds = $main->load_instapaper_csv($csv_path);
 
 if ($opml_output_path) {
-    $main->export_opml(@suggested_feeds);
+    $main->export_opml(@discovered_feeds);
 }
 
 sub load_instapaper_csv {
@@ -69,14 +69,14 @@ sub load_instapaper_csv {
         }
     }
 
-    my @suggested_feeds;
+    my @discovered_feeds;
     for my $feed_url (keys %$preferred_feeds) {
         say($preferred_feeds->{$feed_url}{count} . ' ' . $feed_url) if $debug;
         if (!$min_likes || $preferred_feeds->{$feed_url}{count} >= $min_likes) {
-            push @suggested_feeds, $preferred_feeds->{$feed_url}{feed};
+            push @discovered_feeds, $preferred_feeds->{$feed_url}{feed};
         }
     }
-    return @suggested_feeds;
+    return @discovered_feeds;
 }
 
 sub url_host {
