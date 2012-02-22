@@ -58,9 +58,9 @@ sub load_instapaper_csv {
             next;
         }
 
-        my $preferred_feed = eval { $class->find_preferred_feed($mech) };
+        my $preferred_feed = eval { $class->auto_discover_feed($mech) };
         if (my $error = $@) {
-            say(STDERR "Exception during find_preferred_feed ($url): $error") if $debug;
+            say(STDERR "Exception during auto_discover_feed ($url): $error") if $debug;
             next;
         }
         if ($preferred_feed) {
@@ -87,7 +87,7 @@ sub url_host {
     return $url_host;
 }
 
-sub find_preferred_feed {
+sub auto_discover_feed {
     my $class = shift;
     my $mech = shift;
 
