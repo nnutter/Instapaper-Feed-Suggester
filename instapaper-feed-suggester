@@ -10,10 +10,12 @@ require URI::_foreign;
 
 my $main = __PACKAGE__;
 
-my ($opml_output_path, $help, $man) = ('')x3;
+my ($opml_output_path, $help, $man, $min_likes, $debug) = ('')x5;
 GetOptions(
+    "min-likes=i" => \$min_likes,
     "output=s" => \$opml_output_path,
     "help|?" => \$help,
+    "debug" => \$debug,
     man => \$man,
 ) || pod2usage(2);
 pod2usage(1) if $help;
@@ -56,13 +58,13 @@ sub load_instapaper_csv {
 
         eval { $mech->get($url) };
         if (my $error = $@) {
-            say(STDERR "Exception during get ($url): $error");
+            say(STDERR "Exception during get ($url): $error") if $debug;
             next;
         }
 
         my $preferred_feed = eval { $class->find_preferred_feed($mech) };
         if (my $error = $@) {
-            say(STDERR "Exception during find_preferred_feed ($url): $error");
+            say(STDERR "Exception during find_preferred_feed ($url): $error") if $debug;
             next;
         }
         if ($preferred_feed) {
@@ -73,8 +75,10 @@ sub load_instapaper_csv {
 
     my @suggested_feeds;
     for my $feed_url (keys %$preferred_feeds) {
-        say($preferred_feeds->{$feed_url}{count} . ' ' . $feed_url);
-        push @suggested_feeds, $preferred_feeds->{$feed_url}{feed};
+        say($preferred_feeds->{$feed_url}{count} . ' ' . $feed_url) if $debug;
+        if (!$min_likes || $preferred_feeds->{$feed_url}{count} >= $min_likes) {
+            push @suggested_feeds, $preferred_feeds->{$feed_url}{feed};
+        }
     }
     return @suggested_feeds;
 }
@@ -96,7 +100,7 @@ sub find_preferred_feed {
     my @feeds = $class->feeds($mech);
 
     unless (@feeds) {
-        say(STDERR "Unable to find preferred feed for ($url): no feeds found.");
+        say(STDERR "Unable to find preferred feed for ($url): no feeds found.") if $debug;
         return;
     }
 
@@ -108,7 +112,7 @@ sub find_preferred_feed {
     if (@feedburner_feeds == 1) {
         return shift @feedburner_feeds;
     } elsif (@feedburner_feeds) {
-        say(STDERR "Unable to find preferred feed for ($url): multiple FeedBurner feeds found:\n\t" . join("\n\t", map { $class->abs_url($_) } @feedburner_feeds));
+        say(STDERR "Unable to find preferred feed for ($url): multiple FeedBurner feeds found:\n\t" . join("\n\t", map { $class->abs_url($_) } @feedburner_feeds)) if $debug;
         return;
     }
 
@@ -118,7 +122,7 @@ sub find_preferred_feed {
         return shift @url_host_feeds;
     }
 
-    say(STDERR "Unable to find preferred feed for ($url): no FeedBurner or $url_host feeds found:\n\t" . join("\n\t", map { $class->abs_url($_) } @feeds));
+    say(STDERR "Unable to find preferred feed for ($url): no FeedBurner or $url_host feeds found:\n\t" . join("\n\t", map { $class->abs_url($_) } @feeds)) if $debug;
     return;
 }
 
