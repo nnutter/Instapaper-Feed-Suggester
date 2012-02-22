@@ -38,10 +38,6 @@ if ($opml_output_path) {
     $main->export_opml(@suggested_feeds);
 }
 
-sub HELP_MESSAGE {
-    say("Usage: $0 [-o <opml_output>] instapaper-export.csv");
-}
-
 sub load_instapaper_csv {
     my $class = shift;
     my $file_path = shift;
